@@ -12,6 +12,7 @@
   <a href="https://github.com/fxclient/FXclient/actions/workflows/deploy_github_pages.yml"><img src="https://github.com/fxclient/FXclient/actions/workflows/deploy_github_pages.yml/badge.svg" alt="Build and Publish to GitHub Pages"></a>
   <a href="https://fxclient.github.io/FXclient/"><img src="https://github.com/fxclient/FXclient/actions/workflows/pages/pages-build-deployment/badge.svg" alt="pages-build-deployment"></a>
 </p>
+this is a forked version of FXclient, so I can deploy it to another address.
 
 ## What is FX Client?
 FX Client is the first Territorial.io client, offering a better User Interface and better User Experience. It's basically Territorial.io but better.
