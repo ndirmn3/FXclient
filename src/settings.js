@@ -1,6 +1,8 @@
 import { KeybindsInput } from "./keybindsInput.js";
 import winCounter from "./winCounter.js";
 import WindowManager from "./windowManager.js";
+import versionData from '../version.json';
+import { displayChangelog } from './changelog.js';
 
 window.__fx = window.__fx || {};
 const __fx = window.__fx;
@@ -19,6 +21,7 @@ var settings = {
   hideBotNames: false,
   highlightClanSpawns: false,
   detailedTeamPercentage: false,
+  openDonationHistoryFromLb: true,
   //"customMapFileBtn": true
   customBackgroundUrl: "",
   keybindButtons: false,
@@ -95,6 +98,12 @@ const settingsManager = new (function () {
       note: "For example: this would show 25.82% instead of 26% on the pie chart in team games"
     },
     {
+      for: "openDonationHistoryFromLb",
+      type: "checkbox",
+      label: "Open donation history from the leaderboard",
+      note: "Changes whether or not clicking on a player's name in the in-game leaderboard in team games will open their donation history",
+    },
+    {
       for: "customBackgroundUrl",
       type: "textInput",
       label: "Custom main menu background:",
@@ -106,6 +115,17 @@ const settingsManager = new (function () {
     {
       for: "keybindButtons", type: "checkbox",
       label: "Keybind buttons", note: "Show keybind buttons above the troop selector (max 6)"
+    },
+    function Footer(container) {
+      const versionInfo = document.createElement("p");
+      versionInfo.innerText = `FX Client v${versionData.version}`;
+      const links = document.createElement("p");
+      links.innerHTML = `<a href="https://discord.gg/dyxcwdNKwK" target="_blank">Discord server</a> |
+        <a href="https://github.com/fxclient/FXclient#readme">Github repository</a>`;
+      const changelogButton = document.createElement("button");
+      changelogButton.innerText = "Changelog";
+      changelogButton.addEventListener("click", displayChangelog);
+      container.append(versionInfo, links, changelogButton);
     }
   ];
   const settingsContainer = document.querySelector(".settings .scrollable");
@@ -232,7 +252,7 @@ const settingsManager = new (function () {
     Object.keys(checkboxFields).forEach(function (key) {
       checkboxFields[key].checked = settings[key];
     });
-    customElements.forEach((element) => element.update(settings));
+    customElements.forEach((element) => element.update?.(settings));
   };
   this.resetAll = function () {
     if (
