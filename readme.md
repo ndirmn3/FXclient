@@ -13,7 +13,7 @@ this is a forked version of FXclient, so I can deploy it to another address.
 ## What is FX Client?
 FX Client is the first Territorial.io client, offering a better User Interface and better User Experience. It's basically Territorial.io but better.
 
-**You can use the latest version of the client here: https://fxclient.github.io/FXclient/**
+**You can use the latest version of the client here: https://fxclient.pages.dev**
 
 ## Features:
 1. It's 100% free and open source on Github
@@ -34,20 +34,3 @@ FX Client is the first Territorial.io client, offering a better User Interface a
 13. Make fullscreen mode trigger automatically
 14. Set a custom main menu background
 15. Create custom attack percentage keybinds
-
-## Building Locally
-
-To build the client locally, install Node.js if you haven't already, clone the repo, then run:
-
-```
-npm install
-npm run build
-```
-
-This will install the dependencies, download the game and build the client.
-
-To build from an already downloaded copy of the game, use `npm run build-only`.
-
-## Contact Us
-
-Join the FX Client Discord server: https://discord.gg/JEwYWGraj7
