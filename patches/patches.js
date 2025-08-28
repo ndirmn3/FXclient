@@ -2,6 +2,15 @@ import assets from '../assets.js';
 import ModUtils from '../modUtils.js';
 
 export default (/** @type {ModUtils} */ modUtils) => {
+
+    // Disable built-in Territorial.io error reporting
+    modUtils.insertCode(
+        `window.removeEventListener("error", err);
+        msg = e.lineno + " " + e.colno + "|" + getStack(e); /* here */`,
+        `__fx.reportError(e, msg);
+        return alert("Error:\\n" + e.filename + " " + e.lineno + " " + e.colno + " " + e.message);`
+    )
+
     modUtils.waitForMinification(() => applyPatches(modUtils))
 }
 //export const requiredVariables = ["game", "playerId", "playerData", "rawPlayerNames", "gIsSingleplayer", "playerTerritories"];
@@ -26,8 +35,8 @@ function applyPatches(/** @type {ModUtils} */ { replace, replaceOne, replaceRawC
 + "<br><a href='https://github.com/fxclient/FXclient' target='_blank'>Github repository</a></b>",`);
 
     // Add update information
-    replaceRawCode(`new k("🚀 New Game Update","The game has been updated! Please reload the game.",!0,[`,
-        `new k("🚀 New Game Update","The game has been updated! Please reload the game."
+    replaceRawCode(`new k("🚀 New Game Update","The game was updated! Please reload the game.",!0,[`,
+        `new k("🚀 New Game Update","The game was updated! Please reload the game."
         + "<div style='border: white; border-width: 1px; border-style: solid; margin: 10px; padding: 5px;'><h2>FX Client is not yet compatible with the latest version of the game.</h2><p>Updates should normally be available within a few hours.<br>You can still use FX to play in singleplayer mode.</p></div>",!0,[`
     );
 
@@ -51,7 +60,7 @@ function applyPatches(/** @type {ModUtils} */ { replace, replaceOne, replaceRawC
     // Increment win counter on wins
     replaceRawCode(`=function(sE){a8.gD[sE]&&(o.ha(sE,2),b.h9<100?xD(0,__L([a8.jx[sE]]),3,sE,ad.gN,ad.kl,-1,!0):xD(0,__L([a8.jx[sE]]),3,sE,ad.gN,ad.kl,-1,!0))`,
         `=function(sE){
-		if (${playerId} === sE && !${gIsSingleplayer})
+		if (${playerId} === sE && !${gIsSingleplayer} && !${dict.game}.${dict.gIsReplay})
 			__fx.wins.count++, window.localStorage.setItem("fx_winCount", __fx.wins.count),
 			xD(0,"Your Win Count is now " + __fx.wins.count,3,sE,ad.gN,ad.kl,-1,!0);
 		a8.gD[sE]&&(o.ha(sE,2),b.h9<100?xD(0,__L([a8.jx[sE]]),3,sE,ad.gN,ad.kl,-1,!0):xD(0,__L([a8.jx[sE]]),3,sE,ad.gN,ad.kl,-1,!0))`);
@@ -277,21 +286,6 @@ canvas.font=aY.g0.g1(1,fontSize),canvas.fillStyle="rgba("+gR+","+tD+","+hj+",0.6
             `this.uI=function(username){var uK,uJ=username.indexOf("[");return!(uJ<0)&&1<(uK=username.indexOf("]"))-uJ&&uK-uJ<=8?username.substring(uJ+1,uK).toUpperCase().trim():null}, __fx.leaderboardFilter.parseClanFromPlayerName = this.uI;`);
     }
 
-    { // Hovering tooltip
-        replaceRawCode("this.click=function(gG,gH,uH){var fd=an.fe(gG),ff=an.fg(gH),fh=an.fi(fd,ff),fj=an.fk(fh);if(!an.fl(fd,ff))return!1;var fd=(bB.d3.isUIZoomEnabled()?.025:.0144)*aO.g4,ff=performance.now();if(Math.abs(gG-wK)>fd||Math.abs(gH-wL)>fd||dg+500<ff)return!1;if(dg=ff,uH&&!function(gG,gH,fj){a3.ek(fj)||-1===(gG=ao.fr.wq(gG,gH))?l.wp(fj):l.wr(gG)}(gG,gH,fj),",
-            `__fx.hoveringTooltip.display = function(mouseX, mouseY) {
-			var coordX = an.fe(mouseX), coordY = an.fg(mouseY),
-				coord = an.fi(coordX, coordY), point = an.fk(coord);
-			if (coordX < 0 || coordY < 0) return;
-			(function(gG, gH, fj) {
-				a3.ek(fj) || -1 === (gG = ao.fr.wq(gG, gH)) ? l.wp(fj) : l.wr(gG)
-			}(mouseX, mouseY, point))
-		}
-		this.click=function(gG,gH,uH){var fd=an.fe(gG),ff=an.fg(gH),fh=an.fi(fd,ff),fj=an.fk(fh);if(!an.fl(fd,ff))return!1;fd=(bB.d3.isUIZoomEnabled()?.025:.0144)*aO.g4,ff=performance.now();if(Math.abs(gG-wK)>fd||Math.abs(gH-wL)>fd||dg+500<ff)return!1;if(dg=ff,uH&&!function(gG,gH,fj){a3.ek(fj)||-1===(gG=ao.fr.wq(gG,gH))?l.wp(fj):l.wr(gG)}(gG,gH,fj),`)
-        replaceRawCode("aK.nH=(window.devicePixelRatio||1)*aEr,",
-            `aK.nH = (window.devicePixelRatio || 1) * aEr, __fx.hoveringTooltip.canvasPixelScale = aK.nH,`)
-    }
-
     // Detailed team pie chart percentage
     replaceRawCode(`qr=Math.floor(100*f0+.5)+"%"`,
         `qr = (__fx.settings.detailedTeamPercentage ? (100*f0).toFixed(2) : Math.floor(100*f0+.5)) + "%"`)
@@ -300,10 +294,6 @@ canvas.font=aY.g0.g1(1,fontSize),canvas.fillStyle="rgba("+gR+","+tD+","+hj+",0.6
     // Invalid hostname detection avoidance
     replaceRawCode(`,this.hostnameIsValid=0<=window.location.hostname.toLowerCase().indexOf("territorial.io"),`,
         `,this.hostnameIsValid=true,`)
-
-    // Disable built-in Territorial.io error reporting
-    replaceOne(/window\.addEventListener\("error",function (\w+)\((\w+)\){/g,
-    '$& window.removeEventListener("error", $1); return alert("Error:\\n" + $2.filename + " " + $2.lineno + " " + $2.colno + " " + $2.message);');
 
     console.log('Removing ads...');
     // Remove ads

@@ -1,17 +1,6 @@
 import versionData from '../version.json';
 const { version, lastUpdated } = versionData;
 
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.addEventListener("message", (e) => {
-    const message = e.data;
-    if (message.event === "activate" && buildTimestamp !== message.version) {
-      // worker was updated in the background
-      document.getElementById("updateNotification").style.display = "block";
-    }
-  });
-  navigator.serviceWorker.register("./sw.js");
-}
-
 import settingsManager from './settings.js';
 import { clanFilter, leaderboardFilter } from "./clanFilters.js";
 import WindowManager from "./windowManager.js";
@@ -23,6 +12,7 @@ import hoveringTooltip from "./hoveringTooltip.js";
 import { keybindFunctions, keybindHandler, mobileKeybinds } from "./keybinds.js";
 import customLobby from './customLobby.js';
 import { displayChangelog } from './changelog.js';
+import { reportError } from './debugging.js';
 
 const savedVersion = localStorage.getItem("fx_version");
 if (savedVersion !== version) {
@@ -42,6 +32,7 @@ __fx.keybindFunctions = keybindFunctions;
 __fx.keybindHandler = keybindHandler;
 __fx.mobileKeybinds = mobileKeybinds;
 __fx.donationsTracker = donationsTracker;
+__fx.reportError = reportError;
 __fx.playerList = playerList;
 __fx.hoveringTooltip = hoveringTooltip;
 __fx.clanFilter = clanFilter;
