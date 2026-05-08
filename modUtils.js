@@ -51,6 +51,7 @@ class ModUtils {
         this.waitForMinification = this.waitForMinification.bind(this);
         this.matchCode = this.matchCode.bind(this);
         this.insertCode = this.insertCode.bind(this);
+        this.modifyCode = this.modifyCode.bind(this);
     }
     
     /** @param {RegExp} expression */
@@ -106,6 +107,7 @@ class ModUtils {
         }
         return Object.fromEntries(Object.entries(groups).map(([identifier, groupNumber]) => [identifier, expressionMatchResult[groupNumber]]));
     }
+    /** @param {{ [x: string]: string; }} [nameMappings] */
     matchRawCode(/** @type {string} */ raw, nameMappings) {
         const { expression, groups } = this.generateRegularExpression(raw, false, nameMappings);
         try {
@@ -148,8 +150,8 @@ class ModUtils {
      * @typedef {{ dictionary?: { [x: string]: string } }} BaseOptions
      * @typedef {BaseOptions & { addToDictionary?: string[] }} MatchCodeOptions
      */
-    matchCode(code, /** @type {MatchCodeOptions=} */ options) {
-        const result = this.matchRawCode(minifyCode(code));
+    matchCode(/** @type {string} */ code, /** @type {MatchCodeOptions=} */ options) {
+        const result = this.matchRawCode(minifyCode(code), options?.dictionary);
         if (options?.addToDictionary !== undefined) {
             options.addToDictionary.forEach(varName => {
                 if (result[varName] === undefined)
@@ -176,6 +178,23 @@ class ModUtils {
         return this.replaceCode(code.replace(insertionPoint, ""), code.replace(insertionPoint, codeToInsert), options);
     }
 
+    /**
+     * @param {string} annotatedCode
+     * @param {BaseOptions} [options]
+     * Currenly supports lines starting with /\*insert line:*\/ (use the `insert` helper function)
+     */
+    modifyCode(annotatedCode, options) {
+        const lines = annotatedCode.split(/\r?\n/g).map(l => l.trim())
+        const insertionMarker = "/*insert line:*/"
+
+        const source = lines.filter(l => !l.startsWith(insertionMarker)).join("\n")
+        const replacement = lines.filter(l => {
+            return l.startsWith(insertionMarker) ? l.slice(insertionMarker.length) : l
+        }).join("\n")
+        if (source === replacement) throw new Error("modifyCode found no changes to apply. Did you mistype the keywords?")
+        return this.replaceCode(source, replacement, options);
+    }
+
     waitForMinification(/** @type {Function} */ handler) {
         this.postMinifyHandlers.push(handler);
     }
@@ -186,3 +205,15 @@ class ModUtils {
 }
 
 export default ModUtils;
+
+/** @param {(modUtils: ModUtils) => any} callback */
+export function definePatch(callback) {
+    return (/** @type {ModUtils} */ modUtils) => callback(modUtils)
+}
+/**
+ * Helper for `modifyCode`
+ * @param {string} code
+*/
+export const insert = (code) => (
+    "\n" + code.split(/\r?\n/g).map(l => "/*insert line:*/" + l).join("\n") + "\n"
+);

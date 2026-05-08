@@ -1,12 +1,13 @@
 import WindowManager from "./windowManager.js";
 
 const customLobbiesUnavailable = true;
-//const socketURL = "ws://localhost:8080/";
-const socketURL = "wss://fx.peshomir.workers.dev/";
+// const socketURL = "ws://localhost:8080/";
+const socketURL = "wss://fx-lobbies.peshomir.workers.dev/";
 const customMessageMarker = 120;
 let isActive = false;
 let currentCode = "";
 let joinLobby = () => { };
+/** when `leaveLobby` is called, the modified code will also execute setActive(false) */
 let leaveLobby = () => { };
 let sendRaw = (socketId, data) => { };
 const textEncoder = new TextEncoder();
@@ -33,6 +34,10 @@ const windowElement = WindowManager.create({
 
 const header = document.createElement("h2");
 header.textContent = "Custom Lobby";
+header.style.marginBottom = "0px";
+header.style.marginBlockStart = "0.5em";
+const pingIndicator = document.createElement("p");
+pingIndicator.style.marginTop = "0px";
 
 const main = document.createElement("div");
 main.className = "customlobby-main";
@@ -152,7 +157,7 @@ const copyLinkButton = createButton("Copy link", () => {
 });
 footer.append(startButton, leaveButton, copyLinkButton);
 
-windowElement.append(header, main, footer);
+windowElement.append(header, pingIndicator, main, footer);
 
 /** @param {HTMLSelectElement} element  */
 function setSelectMenuOptions(options, element) {
@@ -174,13 +179,13 @@ document.getElementById("lobbyCode").addEventListener("input", ({ target: input 
     currentCode = input.value.toLowerCase();
     input.value = "";
     WindowManager.closeWindow("lobbyJoinMenu");
-    isActive = true;
+    setActive(true)
     joinLobby();
 });
 document.getElementById("createLobbyButton").addEventListener("click", () => {
     currentCode = "";
     WindowManager.closeWindow("lobbyJoinMenu");
-    isActive = true;
+    setActive(true)
     joinLobby();
 });
 
@@ -204,7 +209,12 @@ function isCustomMessage(raw) {
     const subArray = new Uint8Array(raw.buffer, 1);
     const message = JSON.parse(textDecoder.decode(subArray));
     const { t: type, d: data } = message;
-    if (type === "lobby") {
+    if (type === "pong") {
+        const latency = performance.now() - data
+        pingIndicator.innerText = `Ping: ${latency} ms`
+    } else if (type === "lobby") {
+        pingIndicator.innerText = ""
+        sendPing()
         WindowManager.openWindow("customLobby");
         header.textContent = "Custom Lobby " + data.code;
         currentCode = data.code;
@@ -293,7 +303,9 @@ function updatePlayerCount() {
 }
 
 function getSocketURL() {
-    return socketURL + (currentCode === "" ? "create" : "join?" + currentCode)
+    if (currentCode !== "") return socketURL + "join?" + currentCode
+    const region = document.getElementById("customLobbyRegion").value
+    return socketURL + "create" + (region === "default" ? "" : `?location=${region}`)
 }
 function getPlayerId() {
     let id = 0;
@@ -317,7 +329,7 @@ function checkForLobbyLink(isHashChangeEvent) {
         // in case the player is already in a lobby
         if (isHashChangeEvent) leaveLobby();
         currentCode = hash.slice(7);
-        isActive = true;
+        setActive(true)
         joinLobby();
     }
 }
@@ -329,9 +341,16 @@ function setJoinFunction(f) {
 }
 function setLeaveFunction(f) { leaveLobby = f; }
 function setSendFunction(f) { sendRaw = f; }
+function sendPing() {
+    sendMessage("ping", performance.now())
+}
+let pingInterval;
 function setActive(active) {
     isActive = active;
-    if (active === false) WindowManager.closeWindow("customLobby");
+    if (active === false) {
+        WindowManager.closeWindow("customLobby");
+        if (pingInterval !== undefined) clearInterval(pingInterval)
+    } else pingInterval = setInterval(sendPing, 10_000)
 }
 function hideWindow() {
     WindowManager.closeWindow("customLobby");

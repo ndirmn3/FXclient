@@ -70,6 +70,13 @@ async function patchGameCode() {
 			str += __L(/* Strength: {10} */ [b0.rY.formatNumber(playerData.playerBalances[player])]) + "   ";
 			str += __L(/* Territory: {10} */ [b0.rY.formatNumber(playerData.playerTerritories[player])]) + "   ";
 		`, addToDictionary: ["game", "gIsReplay", "playerData", "rawPlayerNames", "playerBalances", "playerTerritories"]
+	}, {
+		code: `this.a = Math.floor(0.066 * b.c);
+			d = b.d - 4 * uiSizes.gap - this.a;`,
+		addToDictionary: ["uiSizes", "gap"]
+	}, {
+		code: `var dt=MenuManager.getState();if(dt===6){if(d===4211){/*...*/}}`,
+		addToDictionary: ["MenuManager", "getState"]
 	}];
 	codeSegments.forEach(({ code, addToDictionary }) => {
 		modUtils.matchCode(code, { addToDictionary })
@@ -110,7 +117,7 @@ async function patchGameCode() {
 		"[0]=__L(),@strs[1]=@game.@gIsSingleplayer?__L():__L(),",
 		"?(this.gB=Math.floor(.066*aK.fw),g5=aK.g5-4*@uiSizes.@gap-this.gB):",
 		`for(a0L=new Array(@game.@gMaxPlayers),a0A.font=a07,@i=game.gMaxPlayers-1;0<=i;i--)a0L[i]=i+1+".",@playerData.@playerNames[i]=aY.qW.tm(playerData.@rawPlayerNames[i],a07,a0W),a0K[i]=Math.floor(a0A.measureText(playerData.playerNames[i]).width);`,
-		`var dt=@MenuManager.@getState();if(6===dt){if(4211===d)`
+		//`var dt=@MenuManager.@getState();if(6===dt){if(4211===d)`
 	]
 
 	rawCodeSegments.forEach(code => {

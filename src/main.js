@@ -1,5 +1,5 @@
 import versionData from '../version.json';
-const { version, lastUpdated } = versionData;
+const { version, lastUpdated, isSignificant } = versionData;
 
 import settingsManager from './settings.js';
 import { clanFilter, leaderboardFilter } from "./clanFilters.js";
@@ -14,15 +14,16 @@ import customLobby from './customLobby.js';
 import { displayChangelog } from './changelog.js';
 import { reportError } from './debugging.js';
 
-const savedVersion = localStorage.getItem("fx_version");
-if (savedVersion !== version) {
-  localStorage.setItem("fx_version", version);
-  if (savedVersion !== null) displayChangelog();
-}
-
 window.__fx = window.__fx || {};
 const __fx = window.__fx;
 __fx.version = version + " " + lastUpdated;
+__fx.isCustomLobbyVersion = window.location.href.startsWith("https://fxclient.github.io/custom-lobbies")
+
+const savedVersion = localStorage.getItem("fx_version");
+if (savedVersion !== version && !__fx.isCustomLobbyVersion) {
+  localStorage.setItem("fx_version", version);
+  if (savedVersion !== null && isSignificant) displayChangelog();
+}
 
 __fx.settingsManager = settingsManager;
 __fx.leaderboardFilter = leaderboardFilter;
