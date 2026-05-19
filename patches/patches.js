@@ -2,17 +2,10 @@ import assets from '../assets.js';
 import ModUtils from '../modUtils.js';
 
 export default (/** @type {ModUtils} */ modUtils) => {
-
-    // Disable built-in Territorial.io error reporting
-    modUtils.insertCode(
-        `window.removeEventListener("error", err);
-        msg = e.lineno + " " + e.colno + "|" + getStack(e); /* here */`,
-        `__fx.reportError(e, msg);
-        return alert("Error:\\n" + e.filename + " " + e.lineno + " " + e.colno + " " + e.message);`
-    )
+    const { insertCode, waitForMinification } = modUtils
 
     // Render win count
-    modUtils.insertCode(`var s = Math.floor((Device.a1.largeUIEnabled() ? 0.018 : 0.0137) * h___.hz);
+    insertCode(`var s = Math.floor((Device.a1.largeUIEnabled() ? 0.018 : 0.0137) * h___.hz);
 		ctx.font = Util.qd.sS(0, Math.max(5, s));
 		Util.qd.textBaseline(ctx, 0);
 		Util.qd.textAlign(ctx, 2);
@@ -27,12 +20,16 @@ export default (/** @type {ModUtils} */ modUtils) => {
         ctx.fillText(text, ctx.canvas.width - textLength - size / 2, size * 2);`)
 
     // Make the main canvas context have an alpha channel if a custom background is being used
-    modUtils.insertCode(`mainCanvasElement = document.getElementById("canvasA");
+    insertCode(`mainCanvasElement = document.getElementById("canvasA");
 		if (Device.id === 2) { mainCanvasElement.style.webkitUserSelect = "none"; }
 		mainCanvas = mainCanvasElement.getContext("2d", { alpha: /* here */ false });`,
     `__fx.makeMainMenuTransparent ? true :`)
 
-    modUtils.waitForMinification(() => applyPatches(modUtils))
+	// Reset donation history and leaderboard filter when a new game is started
+	insertCode(`an.init();ai.a5l();bA.pQ.qC = [];bA.hZ.pT = 1;/* here */`,
+	`__fx.donationsTracker.reset(), __fx.leaderboardFilter.reset(), __fx.customLobby.isActive() && __fx.customLobby.hideWindow();`);
+
+    waitForMinification(() => applyPatches(modUtils))
 }
 //export const requiredVariables = ["game", "playerId", "playerData", "rawPlayerNames", "gIsSingleplayer", "playerTerritories"];
 
@@ -127,7 +124,7 @@ function applyPatches(/** @type {ModUtils} */ { replace, replaceOne, replaceRawC
 
     // Track donations
     replaceOne(/(this\.\w+=function\((\w+),(\w+)\)\{)(\2===\w+\.\w+&&\(\w+\.\w+\((\w+\.\w+)\[0\],\5\[1\],\3\),this\.(\w+)\[12\]\+=\5\[1\],this\.\6\[16\]\+=\5\[0\]\),\3===\w+\.\w+&&\()/g,
-        "$1 __fx.donationsTracker.logDonation($2, $3, $5[0]); $4")
+        `$1 __fx.donationsTracker.logDonation($2, $3, $5[0], ${dict.sidebar}.${dict.getTime}()); $4`)
 
     // Display donations for a player when clicking on them in the leaderboard
     // and skip handling clicks when clicking on an empty space (see the isEmptySpace
@@ -135,31 +132,6 @@ function applyPatches(/** @type {ModUtils} */ { replace, replaceOne, replaceRawC
     // match , 0 !== dG[x]) && fq.hB(x, 800, false, 0),
     replaceOne(/(0!==\w+\.\w+\[(\w+)\])(\)&&\w+\.\w+\(\2,800,!1,0\),)/g,
         `${dict.game}.${dict.gIsTeamGame} && __fx.settings.openDonationHistoryFromLb && __fx.donationsTracker.displayHistory($2, ${rawPlayerNames}, ${gIsSingleplayer}), $1 && !isEmptySpace $3`);
-
-    // Reset donation history and leaderboard filter when a new game is started
-    replaceRawCode(",ab.dP(),ad.a10(),b5.nZ.oJ=[],bc.dP(),this.wE=1,",
-        `,ab.dP(),ad.a10(),b5.nZ.oJ=[],bc.dP(),this.wE=1,
-        __fx.donationsTracker.reset(), __fx.leaderboardFilter.reset(), __fx.customLobby.isActive() && __fx.customLobby.hideWindow(),`)
-
-    { // Name rendering patches - Display density of other players & Hide bot names features
-        const { placeBalanceAbove } = matchRawCode(`,aGH+=Math.floor(.78*fontSize),placeBalanceAbove?aGN(a7,aGJ,aGG,aGH,hT):aGM(hT,a7,aGJ,aGG,aGH,aGI)`);
-        // Balance rendering; Renders density when the "Reverse Name/Balance" setting is off
-        // temporarily disabled
-        // replaceRawCode("function a9V(ctx,i,fontSize,x,y,a9S){i=ac.jv.formatNumber(playerData.playerBalances[i]);a9S>>1&1?(ctx.lineWidth=.05*fontSize,ctx.strokeStyle=a9U(fontSize,a9S%2),ctx.strokeText(i,x,y)):(1<a9S&&(ctx.lineWidth=.12*fontSize,ctx.strokeStyle=a9U(fontSize,a9S),ctx.strokeText(i,x,y)),ctx.fillText(i,x,y))}",
-        //     `function a9V(ctx,i,fontSize,x,y,a9S){
-		// var ___id = i;
-		// i=ac.jv.formatNumber(playerData.playerBalances[i]);a9S>>1&1?(ctx.lineWidth=.05*fontSize,ctx.strokeStyle=a9U(fontSize,a9S%2),ctx.strokeText(i,x,y)):(1<a9S&&(ctx.lineWidth=.12*fontSize,ctx.strokeStyle=a9U(fontSize,a9S),ctx.strokeText(i,x,y)),ctx.fillText(i,x,y));
-		// ${placeBalanceAbove} || __fx.settings.showPlayerDensity && (__fx.settings.coloredDensity && (ctx.fillStyle = __fx.utils.textStyleBasedOnDensity(___id)), ctx.fillText(__fx.utils.getDensity(___id), x, y + fontSize))}`)
-        // Name rendering; Renders density when the "Reverse Name/Balance" setting is on (default)
-        replaceOne(/(function \w+\((?<i>\w+),(?<fontSize>\w+),(?<x>\w+),(?<y>\w+),(?<canvas>\w+)\){)(\6\.fillText\((?<playerData>\w+)\.(?<playerNames>\w+)\[\2\],\4,\5\)),(\2<(?<game>\w+)\.(?<gHumans>\w+)&&2!==\8\.(?<playerStates>\w+)\[[^}]+)}/g,
-            `$1 var ___id = $2;
-            var showName = $<i> < $<game>.$<gHumans> || !__fx.settings.hideBotNames;
-            if (showName) $7, $10;
-            ${placeBalanceAbove} && __fx.settings.showPlayerDensity && (
-                __fx.settings.coloredDensity && ($<canvas>.fillStyle = __fx.utils.textStyleBasedOnDensity(___id)),
-                $<canvas>.fillText(__fx.utils.getDensity(___id), $<x>, showName ? $<y> + $<fontSize> : $<y>)
-            ); }`);
-    }
 
     // Detailed team pie chart percentage
     replaceRawCode(`qr=Math.floor(100*f0+.5)+"%"`,

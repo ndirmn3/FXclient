@@ -1,9 +1,8 @@
 {
-    "version": "0.6.18.2",
-    "lastUpdated": "May 11",
+    "version": "0.6.20",
+    "lastUpdated": "May 19",
     "changes": [
-        "This is a quick temporary update just to get FX working again in a playable state. The hovering tooltip feature doesn't work currently, but will be fixed soon.", 
-        "To get density to display, you must turn on \"Place Balance Above\" in the game's settings if you haven't already."
+        "The current tick number is now shown in the top bar near the balance. This can be disabled in the settings."
     ],
     "isSignificant": true
 }
